@@ -84,18 +84,17 @@ class Auth0:
         }
         resp = self.session.get(url=url, headers=headers, allow_redirects=True, timeout=100)
 
-        if resp.status_code == 200:
-            try:
-                url_params = parse_qs(urlparse(resp.url).query)
-                state = url_params['state'][0]
-                return self.__part_five(state)
-            except IndexError as exc:
-                raise Exception('Rate limit hit.') from exc
-        else:
+        if resp.status_code != 200:
             raise Exception('Error request login url.')
+        try:
+            url_params = parse_qs(urlparse(resp.url).query)
+            state = url_params['state'][0]
+            return self.__part_five(state)
+        except IndexError as exc:
+            raise Exception('Rate limit hit.') from exc
 
     def __part_five(self, state: str) -> str:
-        url = 'https://auth0.openai.com/u/login/identifier?state=' + state
+        url = f'https://auth0.openai.com/u/login/identifier?state={state}'
         headers = {
             'User-Agent': self.user_agent,
             'Referer': url,
@@ -118,7 +117,7 @@ class Auth0:
             raise Exception('Error check email.')
 
     def __part_six(self, state: str) -> str:
-        url = 'https://auth0.openai.com/u/login/password?state=' + state
+        url = f'https://auth0.openai.com/u/login/password?state={state}'
         headers = {
             'User-Agent': self.user_agent,
             'Referer': url,
@@ -147,13 +146,12 @@ class Auth0:
         }
         resp = self.session.get(url=url, headers=headers, allow_redirects=False, timeout=100)
 
-        if resp.status_code == 200:
-            json = resp.json()
-            if 'accessToken' not in json:
-                raise Exception('Get access token failed, maybe you need a proxy.')
-
-            self.access_token = json['accessToken']
-            self.expires = dt.strptime(json['expires'], '%Y-%m-%dT%H:%M:%S.%fZ') - datetime.timedelta(minutes=5)
-            return self.access_token
-        else:
+        if resp.status_code != 200:
             raise Exception('Error get access token.')
+        json = resp.json()
+        if 'accessToken' not in json:
+            raise Exception('Get access token failed, maybe you need a proxy.')
+
+        self.access_token = json['accessToken']
+        self.expires = dt.strptime(json['expires'], '%Y-%m-%dT%H:%M:%S.%fZ') - datetime.timedelta(minutes=5)
+        return self.access_token
