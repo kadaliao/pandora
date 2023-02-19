@@ -10,7 +10,7 @@ from .openai.auth import Auth0
 from .openai.bot import ChatBot
 from .openai.utils import Console
 
-if 'nt' == os.name:
+if os.name == 'nt':
     import pyreadline as readline
 else:
     import readline
@@ -45,10 +45,9 @@ def main():
     )
     args, _ = parser.parse_known_args()
 
-    token_file = args.token_file
-    if token_file:
+    if token_file := args.token_file:
         if not os.path.isfile(token_file):
-            raise Exception('Error: {} is not a file.'.format(token_file))
+            raise Exception(f'Error: {token_file} is not a file.')
 
         with open(token_file, 'r') as f:
             access_token = f.read().strip()
@@ -69,4 +68,4 @@ def run():
         Console.info('\n\nBye...')
         sys.exit(0)
     except Exception as e:
-        Console.error_bh('### Error occurred: ' + str(e))
+        Console.error_bh(f'### Error occurred: {str(e)}')

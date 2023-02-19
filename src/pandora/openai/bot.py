@@ -10,8 +10,8 @@ from .utils import Console
 class Prompt:
     def __init__(self, prompt: str = None, parent_id=None, message_id=None):
         self.prompt = prompt
-        self.parent_id = parent_id if parent_id else self.gen_message_id()
-        self.message_id = message_id if message_id else self.gen_message_id()
+        self.parent_id = parent_id or self.gen_message_id()
+        self.message_id = message_id or self.gen_message_id()
 
     @staticmethod
     def gen_message_id():
@@ -34,8 +34,7 @@ class ChatBot:
         self.state = None
 
     def run(self):
-        conversation_base = self.__choice_conversation()
-        if conversation_base:
+        if conversation_base := self.__choice_conversation():
             self.__load_conversation(conversation_base['id'])
         else:
             self.__new_conversation()
@@ -50,7 +49,7 @@ class ChatBot:
             if not prompt:
                 continue
 
-            if '/' == prompt[0]:
+            if prompt[0] == '/':
                 self.__process_command(prompt)
                 continue
 
@@ -68,7 +67,7 @@ class ChatBot:
 
             if not line:
                 break
-            if '/' == line[0]:
+            if line[0] == '/':
                 return line
 
             lines.append(line)
@@ -78,26 +77,26 @@ class ChatBot:
     def __process_command(self, command):
         command = command.strip().lower()
 
-        if '/quit' == command or '/exit' == command or '/bye' == command:
+        if command in ['/quit', '/exit', '/bye']:
             raise KeyboardInterrupt
-        elif '/del' == command or '/delete' == command or '/remove' == command:
+        elif command in ['/del', '/delete', '/remove']:
             self.__del_conversation(self.state)
-        elif '/title' == command or '/set_title' == command or '/set-title' == command:
+        elif command in ['/title', '/set_title', '/set-title']:
             self.__set_conversation_title(self.state)
-        elif '/select' == command:
+        elif command == '/select':
             self.run()
-        elif '/refresh' == command or '/reload' == command:
+        elif command in ['/refresh', '/reload']:
             self.__load_conversation(self.state.conversation_id)
-        elif '/new' == command:
+        elif command == '/new':
             self.__new_conversation()
             self.__talk_loop()
-        elif '/regen' == command or '/regenerate' == command:
+        elif command in ['/regen', '/regenerate']:
             self.__regenerate_reply(self.state)
-        elif '/token' == command:
+        elif command == '/token':
             self.__print_access_token()
-        elif '/cls' == command or '/clear' == command:
+        elif command in ['/cls', '/clear']:
             self.__clear_screen()
-        elif '/help' == command or 'usage' == command or '/?' == command:
+        elif command in ['/help', 'usage', '/?']:
             self.__print_usage()
 
     @staticmethod
@@ -132,7 +131,7 @@ class ChatBot:
 
     @staticmethod
     def __print_conversation_title(title: str):
-        Console.info_bh('==================== {} ===================='.format(title))
+        Console.info_bh(f'==================== {title} ====================')
         Console.success_h('Double enter to send. Type /? for help.')
 
     def __set_conversation_title(self, state: State):
@@ -187,7 +186,7 @@ class ChatBot:
             if 'model_slug' in message['metadata']:
                 self.state.model_slug = message['metadata']['model_slug']
 
-            if 'user' == message['role']:
+            if message['role'] == 'user':
                 prompt = self.state.user_prompt
 
                 Console.info_b('You:')
@@ -218,7 +217,7 @@ class ChatBot:
             new_title = self.chatgpt.gen_conversation_title(self.state.conversation_id, self.state.model_slug,
                                                             self.state.chatgpt_prompt.message_id)
             self.state.title = new_title
-            Console.success_bh('#### Title generated: ' + new_title)
+            Console.success_bh(f'#### Title generated: {new_title}')
 
     def __regenerate_reply(self, state):
         if not state.conversation_id:
@@ -263,12 +262,12 @@ class ChatBot:
             return None
 
         items = conversations['items']
-        first_page = 0 == conversations['offset']
+        first_page = conversations['offset'] == 0
         last_page = (conversations['offset'] + conversations['limit']) >= conversations['total']
 
-        Console.info_b('Choice conversation (Page {}):'.format(page))
+        Console.info_b(f'Choice conversation (Page {page}):')
         for idx, item in enumerate(items):
-            print('  {}. {}'.format(idx + 1, item['title']))
+            print(f"  {idx + 1}. {item['title']}")
 
         if not last_page:
             Console.warn('  n. >> Next page')
@@ -281,16 +280,16 @@ class ChatBot:
         choice_range = range(1, len(items) + 1)
         while True:
             choice = input('Your choice: ')
-            if 'c' == choice:
+            if choice == 'c':
                 return None
 
-            if 'n' == choice:
+            if choice == 'n':
                 if last_page:
                     Console.error('#### It\'s last page!')
                     continue
                 return self.__choice_conversation(page + 1, page_size)
 
-            if 'p' == choice:
+            if choice == 'p':
                 if first_page:
                     Console.error('#### It\'s first page!')
                     continue
@@ -309,12 +308,12 @@ class ChatBot:
         models = self.chatgpt.list_models()
 
         size = len(models)
-        if 1 == size:
+        if size == 1:
             return models[0]
 
         Console.info_b('Choice model:')
         for idx, item in enumerate(models):
-            print('  {}. {} - {}'.format(idx + 1, item['title'], item['description']))
+            print(f"  {idx + 1}. {item['title']} - {item['description']}")
 
         choice_range = range(1, size + 1)
         while True:

@@ -14,13 +14,13 @@ class Console:
         white = 'white'
         black = 'black'
         for_color = (black if white == color else white) if highlight else color
-        bg_color = 'on_' + color if highlight else None
+        bg_color = f'on_{color}' if highlight else None
 
         return colored(text, color=for_color, on_color=bg_color, attrs=['bold'] if bold else None)
 
     @staticmethod
     def clear():
-        os.system('cls' if 'nt' == os.name else 'clear')
+        os.system('cls' if os.name == 'nt' else 'clear')
 
     @staticmethod
     def info(text: str, highlight=False, bold=False, output=True, end='\n', flush=False):
